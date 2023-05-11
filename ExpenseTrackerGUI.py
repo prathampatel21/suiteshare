@@ -324,10 +324,10 @@ class SuiteShareGUI:
 
         split_users = []
         split_cost = []
-        num_users = tk.simpledialog.askinteger("Total Users", "Enter the number of users to split amongst (excluding creditor)")
-        creditor = tk.simpledialog.askstring("Creditor", "Enter the name of creditor")
-        total_cost = tk.simpledialog.askfloat("Total Cost", "Enter the total cost of the order after taxes & fees.")
-        total_tax = tk.simpledialog.askfloat("Total Tax", "Enter the total taxes/fees of the order.")
+        num_users = tk.simpledialog.askinteger("Total Users", "Enter the number of users to split amongst (excluding creditor):")
+        creditor = tk.simpledialog.askstring("Creditor", "Enter the name of creditor:")
+        total_cost = tk.simpledialog.askfloat("Total Cost", "Enter the total cost of the order after taxes & fees:")
+        total_tax = tk.simpledialog.askfloat("Total Tax", "Enter the total taxes/fees of the order:")
         for i in range(num_users):
             temp = tk.simpledialog.askstring("User", "Enter the name of the user to split:")
             partial_cost = tk.simpledialog.askfloat("Partial Cost", "Enter the partial cost for "  + temp)
@@ -346,7 +346,7 @@ class SuiteShareGUI:
             # Get debt details from user input
             from_user = split_users[i]
             to_user = creditor
-            amount = weighted_cost
+            amount = round(weighted_cost,2)
 
             # Add debt to dataframe
             self.debts = self.debts.append({
