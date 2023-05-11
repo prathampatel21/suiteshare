@@ -195,8 +195,8 @@ class SuiteShareGUI:
         # Get debt details from user input
         from_user = self.debtor_entry.get()
         to_user = self.creditor_entry.get()
-        amountt = self.amount_entry.get()
-        amount = float(amountt)
+        amount = float(self.amount_entry.get())
+
 
         # Add debt to dataframe
         self.debts = self.debts.append({
@@ -212,7 +212,7 @@ class SuiteShareGUI:
         elif to_user not in self.users:
             tk.messagebox.showerror("Error", "One or both users does not not exist.")
             return
-        
+
         # Update graph with new debt
         if from_user not in self.users:
             self.users.append(from_user)
@@ -247,8 +247,8 @@ class SuiteShareGUI:
          # Get debt details from user input
         from_user = self.debtor_entry.get()
         to_user = self.creditor_entry.get()
-        amountt = self.amount_entry.get()
-        amount = float(amountt)
+        amount = float(self.amount_entry.get())
+
 
         # Add debt to dataframe
         self.debts = self.debts.append({
@@ -264,7 +264,7 @@ class SuiteShareGUI:
         elif to_user not in self.users:
             tk.messagebox.showerror("Error", "One or both users does not not exist.")
             return
-        
+
         # Update graph with new debt
         if from_user not in self.users:
             self.users.append(from_user)
@@ -303,7 +303,7 @@ class SuiteShareGUI:
         if user not in self.users:
             tk.messagebox.showerror("Error", "User does not exist.")
             return
-        
+
         # Remove all debts involving the user
         self.debts = self.debts.loc[(self.debts["From"] != user) & (self.debts["To"] != user)]
         self.total_debt = {}
@@ -321,18 +321,58 @@ class SuiteShareGUI:
 
     def split_tax(self):
         self.load()
-        total_cost = tk.simpledialog.askfloat("Total Cost", "Enter the total cost of the order.")
+
+        split_users = []
+        split_cost = []
+        num_users = tk.simpledialog.askinteger("Total Users", "Enter the number of users to split amongst (excluding creditor)")
+        creditor = tk.simpledialog.askstring("Creditor", "Enter the name of creditor")
+        total_cost = tk.simpledialog.askfloat("Total Cost", "Enter the total cost of the order after taxes & fees.")
         total_tax = tk.simpledialog.askfloat("Total Tax", "Enter the total taxes/fees of the order.")
-        partial_cost = tk.simpledialog.askfloat("Partial Cost", "Enter the partial cost of the order you want to calculate fees for.")
+        for i in range(num_users):
+            temp = tk.simpledialog.askstring("User", "Enter the name of the user to split:")
+            partial_cost = tk.simpledialog.askfloat("Partial Cost", "Enter the partial cost for "  + temp)
+            if partial_cost > total_cost:
+                tk.messagebox.showerror("Error", "Partial cost is greater than the total cost of the order.")
+                return
+            split_users.append(temp)
+            split_cost.append(partial_cost)
 
-        if partial_cost > total_cost:
-            tk.messagebox.showerror("Error", "Partial cost is greater than the total cost of the order.")
-            return
-        
-        weighted_tax = (partial_cost/total_cost)*total_tax
-        weighted_cost = partial_cost+weighted_tax
+        for i in range(num_users):
+            weighted_tax = (split_cost[i]/(total_cost-total_tax))*total_tax
+            weighted_cost = split_cost[i]+weighted_tax
 
-        tk.messagebox.showinfo("Success", f"The weighted cost with tax for this user is ${weighted_cost:.2f}")
+            #add debt to the graph
+
+            # Get debt details from user input
+            from_user = split_users[i]
+            to_user = creditor
+            amount = weighted_cost
+
+            # Add debt to dataframe
+            self.debts = self.debts.append({
+                "From": from_user,
+                "To": to_user,
+                "Amount": amount
+            }, ignore_index=True)
+
+            if (from_user, to_user) in self.graph.edges():
+                self.graph[from_user][to_user]['weight'] -= amount
+            else:
+                self.graph.add_edge(from_user, to_user, weight=amount)
+
+            # Update total debt
+            if from_user not in self.total_debt:
+                self.total_debt[from_user] = 0
+            if to_user not in self.total_debt:
+                self.total_debt[to_user] = 0
+            self.total_debt[from_user] -= amount
+            self.total_debt[to_user] += amount
+
+
+            tk.messagebox.showinfo("Success", f"The weighted cost with tax for {split_users[i]} is ${weighted_cost:.2f}")
+
+        self.save()
+
 
 
 
