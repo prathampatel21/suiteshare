@@ -88,6 +88,10 @@ class SuiteShareGUI:
         self.button_sort_users = tk.Button(root_window, text="Sort Users", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.sort_users_by_debt, pady=2, width=13)
         self.button_sort_users.grid(padx=(10, 90), pady=(10, 10), sticky="we")
         self.button_sort_users.place(x=374, y=420, width=160)
+        
+        # Individual Data Button
+        self.button_individual_data = tk.Button(root_window, text="Individual Data", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.individual_data, pady = 2,)
+        self.button_individual_data.grid(row=9, column=1, padx=10, pady=(10, 20), sticky="we")
 
         # Create data structures
         self.users = []
@@ -498,3 +502,47 @@ class SuiteShareGUI:
 
         # Set the window title
         sorted_users_window.title("Users Sorted by Debt")
+    
+    def individual_data(self):
+        self.load()
+        user = tk.simpledialog.askstring("Individual Data", "Who's information do you want to view:")
+
+        # Create a new window to show the table
+        table_window = tk.Toplevel(self.root_window)
+
+        # Load the debts from the debts.csv file into a pandas dataframe
+        debts_df = pd.read_csv("debts.csv")
+
+        # Subsets the debts file to just the specified user
+        debts_df = debts_df.loc[(debts_df['From'] == user) | (debts_df['To'] == user)]
+
+        # Create a treeview widget to display the debts
+        tree = ttk.Treeview(table_window, columns=("From", "To", "Amount"))
+
+        # Set the headings for the columns
+        tree.heading("From", text="From")
+        tree.heading("To", text="To")
+        tree.heading("Amount", text="Amount")
+
+        # Insert the debts into the treeview
+        total_amount = 0
+        for index, row in debts_df.iterrows():
+            if row["From"] == user:
+                amount = -row["Amount"]
+            else:
+                amount = row["Amount"]
+            tree.insert("", "end", text=index, values=(row["From"], row["To"], f"${amount:.2f}"))
+            total_amount += amount
+
+        # Add the total amount owed by the individual to the bottom of the treeview
+        tree.insert("", "end", text="Total", values=("", "", f"${total_amount:.2f}"))
+
+
+        # grid the treeview into the window
+        tree.grid()
+
+        # Set the window title
+        table_window.title("Individual Data")
+
+        # Update the window to show the treeview
+        table_window.update()
