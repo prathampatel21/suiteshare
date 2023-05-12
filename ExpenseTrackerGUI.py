@@ -65,11 +65,11 @@ class SuiteShareGUI:
         # Settle Debt and Calculate Split Tax Buttons
         self.button_clear_debts = tk.Button(root_window, text="Settle Debt", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.clear_debt, pady = 2)
         self.button_clear_debts.grid(padx=10, pady=(40,10), sticky="we")
-        self.button_clear_debts.place(x=100, y=370, width=160)
+        self.button_clear_debts.place(x=12, y=370, width=160)
 
         self.button_split_tax = tk.Button(root_window, text="Split Tax", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.split_tax, pady = 2, width=13)
         self.button_split_tax.grid(padx=10, pady=(40,10), sticky="we",columnspan=1)
-        self.button_split_tax.place(x=285, y=370, width=160)
+        self.button_split_tax.place(x=193, y=370, width=160)
 
         # Debt Log and Debt Table Buttons
         self.button_show_debts = tk.Button(root_window, text="Debt Log", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.show_debts, pady = 2)
@@ -88,10 +88,13 @@ class SuiteShareGUI:
         self.button_sort_users = tk.Button(root_window, text="Sort Users", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.sort_users_by_debt, pady=2, width=13)
         self.button_sort_users.grid(padx=(10, 90), pady=(10, 10), sticky="we")
         self.button_sort_users.place(x=374, y=420, width=160)
-        
-        # Individual Data Button
-        self.button_individual_data = tk.Button(root_window, text="Individual Data", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.individual_data, pady = 2,)
-        self.button_individual_data.grid(row=9, column=1, padx=10, pady=(10, 20), sticky="we")
+
+         # Show Indivisual User Debt Button
+        self.individual_debt_button = tk.Button(root_window, text="Individual Debt", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.individual_debts, pady = 2, width=13)
+        self.individual_debt_button.grid(padx=(10, 90), pady=(10, 10), sticky="we")
+        self.individual_debt_button.place(x=374, y=370, width=160)
+
+
 
         # Create data structures
         self.users = []
@@ -503,10 +506,12 @@ class SuiteShareGUI:
         # Set the window title
         sorted_users_window.title("Users Sorted by Debt")
     
-    def individual_data(self):
-        self.load()
-        user = tk.simpledialog.askstring("Individual Data", "Who's information do you want to view:")
 
+
+    def individual_debts(self):
+        self.load()
+        user = tk.simpledialog.askstring("Individual Debts", "Who's debt information do you want to view:")
+        
         # Create a new window to show the table
         table_window = tk.Toplevel(self.root_window)
 
