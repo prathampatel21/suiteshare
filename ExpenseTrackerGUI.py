@@ -7,13 +7,15 @@ from tkinter import filedialog
 from tkinter import ttk
 from tkinter import PhotoImage
 from maxheap import MaxHeap
+import datetime
+
 
 
 class SuiteShareGUI:
     def __init__(self, root_window):
         self.root_window = root_window
         root_window.title("SuiteShare")
-        root_window.geometry("545x520")
+        root_window.geometry("547x520")
         root_window.configure(bg="#4C7330")
         self.load()
 
@@ -93,7 +95,6 @@ class SuiteShareGUI:
         self.individual_debt_button = tk.Button(root_window, text="Individual Debt", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.individual_debts, pady = 2, width=13)
         self.individual_debt_button.grid(padx=(10, 90), pady=(10, 10), sticky="we")
         self.individual_debt_button.place(x=374, y=370, width=160)
-
 
 
         # Create data structures
@@ -206,7 +207,10 @@ class SuiteShareGUI:
 
 
         # Add debt to dataframe
+        now = datetime.datetime.now()
+        timestamp= now.strftime("%Y-%m-%d %H:%M")
         self.debts = self.debts.append({
+            "Timestamp": timestamp,
             "From": from_user,
             "To": to_user,
             "Amount": amount
@@ -258,7 +262,10 @@ class SuiteShareGUI:
 
 
         # Add debt to dataframe
+        now = datetime.datetime.now()
+        timestamp= now.strftime("%Y-%m-%d %H:%M")
         self.debts = self.debts.append({
+            "Timestamp": timestamp,
             "From": from_user,
             "To": to_user,
             "Amount": -amount
@@ -328,7 +335,6 @@ class SuiteShareGUI:
 
     def split_tax(self):
         self.load()
-
         split_users = []
         split_cost = []
         num_users = tk.simpledialog.askinteger("Total Users", "Enter the number of users to split amongst (excluding creditor):")
@@ -356,7 +362,10 @@ class SuiteShareGUI:
             amount = round(weighted_cost,2)
 
             # Add debt to dataframe
+            now = datetime.datetime.now()
+            timestamp= now.strftime("%Y-%m-%d %H:%M")
             self.debts = self.debts.append({
+                "Timestamp": timestamp,
                 "From": from_user,
                 "To": to_user,
                 "Amount": amount
@@ -377,7 +386,6 @@ class SuiteShareGUI:
 
 
             tk.messagebox.showinfo("Success", f"The weighted cost with tax for {split_users[i]} is ${weighted_cost:.2f}")
-
         self.save()
 
 
@@ -392,16 +400,17 @@ class SuiteShareGUI:
         debts_df = pd.read_csv("debts.csv")
 
         # Create a treeview widget to display the debts
-        tree = ttk.Treeview(table_window, columns=("From", "To", "Amount"))
+        tree = ttk.Treeview(table_window, columns=("Timestamp","From", "To", "Amount"))
 
         # Set the headings for the columns
+        tree.heading("Timestamp", text="Timestamp")
         tree.heading("From", text="From")
         tree.heading("To", text="To")
         tree.heading("Amount", text="Amount")
 
         # Insert the debts into the treeview
         for index, row in debts_df.iterrows():
-            tree.insert("", "end", text=index, values=(row["From"], row["To"], f"${row['Amount']:.2f}"))
+            tree.insert("", "end", text=index+1, values=(row["Timestamp"], row["From"], row["To"], f"${row['Amount']:.2f}"))
 
         # grid the treeview into the window
         tree.grid()
@@ -445,7 +454,7 @@ class SuiteShareGUI:
 
         if confirm:
             # Clear debts dataframe
-            self.debts = pd.DataFrame(columns=["From", "To", "Amount"])
+            self.debts = pd.DataFrame(columns=["Timestamp", "From", "To", "Amount"])
 
             # Clear total debt
             self.total_debt = {}
@@ -511,6 +520,11 @@ class SuiteShareGUI:
     def individual_debts(self):
         self.load()
         user = tk.simpledialog.askstring("Individual Debts", "Who's debt information do you want to view:")
+
+        # Check if the user name doesn't exists
+        if user not in self.users:
+            tk.messagebox.showerror("Error", "User does not exist.")
+            return
         
         # Create a new window to show the table
         table_window = tk.Toplevel(self.root_window)
@@ -522,9 +536,10 @@ class SuiteShareGUI:
         debts_df = debts_df.loc[(debts_df['From'] == user) | (debts_df['To'] == user)]
 
         # Create a treeview widget to display the debts
-        tree = ttk.Treeview(table_window, columns=("From", "To", "Amount"))
+        tree = ttk.Treeview(table_window, columns=("Timestamp", "From", "To", "Amount"))
 
         # Set the headings for the columns
+        tree.heading("Timestamp", text="Timestamp")
         tree.heading("From", text="From")
         tree.heading("To", text="To")
         tree.heading("Amount", text="Amount")
@@ -536,11 +551,11 @@ class SuiteShareGUI:
                 amount = -row["Amount"]
             else:
                 amount = row["Amount"]
-            tree.insert("", "end", text=index, values=(row["From"], row["To"], f"${amount:.2f}"))
+            tree.insert("", "end", text=index+1, values=(row["Timestamp"], row["From"], row["To"], f"${amount:.2f}"))
             total_amount += amount
 
         # Add the total amount owed by the individual to the bottom of the treeview
-        tree.insert("", "end", text="Total", values=("", "", f"${total_amount:.2f}"))
+        tree.insert("", "end", text="Total", values=("", "", "", f"${total_amount:.2f}"))
 
 
         # grid the treeview into the window
