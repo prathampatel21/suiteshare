@@ -198,12 +198,17 @@ class SuiteShareGUI:
 
 
 
-    def add_debt(self):
+    def add_debt(self, from_user = None, to_user = None, amount = None):
         self.load()
         # Get debt details from user input
-        from_user = self.debtor_entry.get()
-        to_user = self.creditor_entry.get()
-        amount = float(self.amount_entry.get())
+        if( from_user == None ):
+            # ASK 
+            from_user = self.debtor_entry.get()
+        if (to_user == None) :
+            # ASK
+            to_user = self.creditor_entry.get()
+        if (amount == None) :
+            amount = float(self.amount_entry.get())
 
 
         # Add debt to dataframe
@@ -256,9 +261,14 @@ class SuiteShareGUI:
     def remove_debt(self):
         self.load()
          # Get debt details from user input
-        from_user = self.debtor_entry.get()
-        to_user = self.creditor_entry.get()
-        amount = float(self.amount_entry.get())
+        if( from_user == None ):
+            # ASK 
+            from_user = self.debtor_entry.get()
+        if (to_user == None) :
+            # ASK
+            to_user = self.creditor_entry.get()
+        if (amount == None) :
+            amount = float(self.amount_entry.get())
 
 
         # Add debt to dataframe
@@ -362,30 +372,9 @@ class SuiteShareGUI:
             amount = round(weighted_cost,2)
 
             # Add debt to dataframe
-            now = datetime.datetime.now()
-            timestamp= now.strftime("%Y-%m-%d %H:%M")
-            self.debts = self.debts.append({
-                "Timestamp": timestamp,
-                "From": from_user,
-                "To": to_user,
-                "Amount": amount
-            }, ignore_index=True)
-
-            if (from_user, to_user) in self.graph.edges():
-                self.graph[from_user][to_user]['weight'] -= amount
-            else:
-                self.graph.add_edge(from_user, to_user, weight=amount)
-
-            # Update total debt
-            if from_user not in self.total_debt:
-                self.total_debt[from_user] = 0
-            if to_user not in self.total_debt:
-                self.total_debt[to_user] = 0
-            self.total_debt[from_user] -= amount
-            self.total_debt[to_user] += amount
-
-
-            tk.messagebox.showinfo("Success", f"The weighted cost with tax for {split_users[i]} is ${weighted_cost:.2f}")
+            
+            self.add_debt(from_user, to_user, amount)
+            
         self.save()
 
 
