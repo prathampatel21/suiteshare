@@ -8,6 +8,7 @@ from tkinter import ttk
 from tkinter import PhotoImage
 from maxheap import MaxHeap
 from SuiteShareMethods import ssmethods
+import datetime
 
 
 class SuiteShareGUI:
@@ -67,11 +68,11 @@ class SuiteShareGUI:
         # Settle Debt and Calculate Split Tax Buttons
         self.button_clear_debts = tk.Button(root_window, text="Settle Debt", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.methods.clear_debt, pady = 2)
         self.button_clear_debts.grid(padx=10, pady=(40,10), sticky="we")
-        self.button_clear_debts.place(x=100, y=370, width=160)
+        self.button_clear_debts.place(x=12, y=370, width=160)
 
         self.button_split_tax = tk.Button(root_window, text="Split Tax", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.methods.split_tax, pady = 2, width=13)
         self.button_split_tax.grid(padx=10, pady=(40,10), sticky="we",columnspan=1)
-        self.button_split_tax.place(x=285, y=370, width=160)
+        self.button_split_tax.place(x=193, y=370, width=160)
 
         # Debt Log and Debt Table Buttons
         self.button_show_debts = tk.Button(root_window, text="Debt Log", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.show_debts, pady = 2)
@@ -91,6 +92,11 @@ class SuiteShareGUI:
         self.button_sort_users.grid(padx=(10, 90), pady=(10, 10), sticky="we")
         self.button_sort_users.place(x=374, y=420, width=160)
 
+        # Show Indivisual User Debt Button
+        self.individual_debt_button = tk.Button(root_window, text="Individual Debt", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.individual_debts, pady = 2, width=13)
+        self.individual_debt_button.grid(padx=(10, 90), pady=(10, 10), sticky="we")
+        self.individual_debt_button.place(x=374, y=370, width=160)
+
         # Create data structures
         self.users = []
         self.debts = pd.DataFrame(columns=["From", "To", "Amount"])
@@ -103,12 +109,14 @@ class SuiteShareGUI:
         
         user_name = self.user_entry.get()
         self.methods.add_user(user_name) 
+        self.user_entry.delete(0,tk.END)
 
     def remove_user(self):
         
         user_name = self.user_entry.get()
 
         self.methods.remove_user(user_name)
+        self.user_entry.delete(0,tk.END)
 
     def add_debt(self):
         # Get debt details from user input
@@ -117,6 +125,9 @@ class SuiteShareGUI:
         amount = float(self.amount_entry.get())
 
         self.methods.add_debt(from_user,to_user,amount)
+        self.debtor_entry.delete(0, tk.END)
+        self.creditor_entry.delete(0, tk.END)
+        self.amount_entry.delete(0, tk.END)
     
     def remove_debt(self):
         # Get debt details from user input
@@ -125,6 +136,9 @@ class SuiteShareGUI:
         amount = float(self.amount_entry.get())
 
         self.methods.remove_debt(from_user,to_user,amount)
+        self.debtor_entry.delete(0, tk.END)
+        self.creditor_entry.delete(0, tk.END)
+        self.amount_entry.delete(0, tk.END)
 
     def show_debts(self):
         self.methods.show_debts(self.root_window)
@@ -134,3 +148,8 @@ class SuiteShareGUI:
     
     def sort_users_by_debt(self):
         self.methods.sort_users_by_debt(self.root_window)
+
+    def individual_debts(self):
+        self.methods.individual_debts(self.root_window)
+
+
