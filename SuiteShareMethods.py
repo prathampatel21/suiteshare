@@ -7,6 +7,7 @@ from tkinter import filedialog
 from tkinter import ttk
 from tkinter import PhotoImage
 from maxheap import MaxHeap
+import datetime
 
 class ssmethods:
 
@@ -70,6 +71,7 @@ class ssmethods:
         # Display a message confirming that the user has been added
         tk.messagebox.showinfo("Success", f"User {user_name} has been added.")
         self.save()
+        
     
     def remove_user(self, user_name = None):
         self.load()
@@ -99,11 +101,22 @@ class ssmethods:
         self.load()
         
         # Add debt to dataframe
+        now = datetime.datetime.now()
+        timestamp= now.strftime("%Y-%m-%d %H:%M")
         self.debts = self.debts.append({
+            "Timestamp": timestamp,
             "From": from_user,
             "To": to_user,
             "Amount": amount
         }, ignore_index=True)
+
+        # Check if the user name doesn't exists
+        if from_user not in self.users:
+            tk.messagebox.showerror("Error", "One or both users does not not exist.")
+            return
+        elif to_user not in self.users:
+            tk.messagebox.showerror("Error", "One or both users does not not exist.")
+            return
     
         # Update graph with new debt
         if from_user not in self.users:
@@ -128,23 +141,30 @@ class ssmethods:
         # Display a message confirming that the debt has been added
         tk.messagebox.showinfo("Success", f"{from_user} owes {to_user} ${amount:.2f}")
         self.save()
-        if( from_user == None ):
-            self.debtor_entry.delete(0, tk.END)
-        if (to_user == None):
-            self.creditor_entry.delete(0, tk.END)
-        if (amount == None) :
-            self.amount_entry.delete(0, tk.END)
+        
+        
     
     def remove_debt(self, from_user = None, to_user = None, amount = None):
         self.load()
     
         # Add debt to dataframe
+        now = datetime.datetime.now()
+        timestamp= now.strftime("%Y-%m-%d %H:%M")
         self.debts = self.debts.append({
+            "Timestamp": timestamp,
             "From": from_user,
             "To": to_user,
             "Amount": -amount
         }, ignore_index=True)
-    
+
+        # Check if the user name doesn't exists
+        if from_user not in self.users:
+            tk.messagebox.showerror("Error", "One or both users does not not exist.")
+            return
+        elif to_user not in self.users:
+            tk.messagebox.showerror("Error", "One or both users does not not exist.")
+            return
+        
         # Update graph with new debt
         if from_user not in self.users:
             self.users.append(from_user)
@@ -169,12 +189,6 @@ class ssmethods:
         tk.messagebox.showinfo("Success", f"The amount {amount} has been removed from the debt between {from_user} and {to_user}.")
         self.save()
         
-        if( from_user == None ):
-            self.debtor_entry.delete(0, tk.END)
-        if (to_user == None):
-            self.creditor_entry.delete(0, tk.END)
-        if (amount == None) :
-            self.amount_entry.delete(0, tk.END)
     
     
     def clear_debt(self):
@@ -207,6 +221,11 @@ class ssmethods:
         total_tax = tk.simpledialog.askfloat("Total Tax", "Enter the total taxes/fees of the order.")
         for i in range(num_users):
             temp = tk.simpledialog.askstring("User", "Enter the name of the user to split:")
+            # Check if the user name already exists
+            while temp not in self.users:
+                tk.messagebox.showerror("Error", "User does not exist.")
+                temp = tk.simpledialog.askstring("User", "Enter the name of the user to split:")
+
             partial_cost = tk.simpledialog.askfloat("Partial Cost", "Enter the partial cost for "  + temp)
             if partial_cost > total_cost:
                 tk.messagebox.showerror("Error", "Partial cost is greater than the total cost of the order.")
@@ -242,16 +261,17 @@ class ssmethods:
         debts_df = pd.read_csv("debts.csv")
     
         # Create a treeview widget to display the debts
-        tree = ttk.Treeview(table_window, columns=("From", "To", "Amount"))
+        tree = ttk.Treeview(table_window, columns=("Timestamp","From", "To", "Amount"))
     
         # Set the headings for the columns
+        tree.heading("Timestamp", text="Timestamp")
         tree.heading("From", text="From")
         tree.heading("To", text="To")
         tree.heading("Amount", text="Amount")
     
         # Insert the debts into the treeview
         for index, row in debts_df.iterrows():
-            tree.insert("", "end", text=index, values=(row["From"], row["To"], f"${row['Amount']:.2f}"))
+            tree.insert("", "end", text=index, values=(row["Timestamp"], row["From"], row["To"], f"${row['Amount']:.2f}"))
     
         # grid the treeview into the window
         tree.grid()
@@ -295,7 +315,7 @@ class ssmethods:
     
         if confirm:
             # Clear debts dataframe
-            self.debts = pd.DataFrame(columns=["From", "To", "Amount"])
+            self.debts = pd.DataFrame(columns=["Timestamp","From", "To", "Amount"])
     
             # Clear total debt
             self.total_debt = {}
@@ -317,8 +337,8 @@ class ssmethods:
     
     
     
-    def sort_users_by_debt(self):
-
+    def sort_users_by_debt(self, root_window = None):
+    
         self.load()
         # Create a max heap to store the users based on their total debt
         max_heap = MaxHeap()
@@ -328,24 +348,81 @@ class ssmethods:
             user_debt = (-debt, user)
             # Insert the user_debt tuple into the max heap
             max_heap.insert(user_debt)
-
+    
         # Create a new window to display the sorted users
-        sorted_users_window = tk.Toplevel(self.root_window)
-
+        sorted_users_window = tk.Toplevel(root_window)
+    
         # Create a treeview widget to display the sorted users
-        tree = ttk.Treeview(sorted_users_window, columns=("User", "Debt"))
-
+        tree = ttk.Treeview(sorted_users_window, columns=("Debt"))
+    
         # Set the headings for the columns
-        tree.heading("User", text="User")
+        tree.heading("#0", text="User")
         tree.heading("Debt", text="Debt")
 
+        # Create a set to keep track of the displayed users
+        displayed_users = set()
+    
         # Insert the sorted users into the treeview
         while not max_heap.is_empty():
-            debt, user = max_heap.find_max()
-            tree.insert("", "end", text=user, values=(user, f"${-debt:.2f}"))
+            debt, user = max_heap.extract_max()
+
+            # Check if the user has already been displayed
+            if user not in displayed_users:
+                displayed_users.add(user)
+                tree.insert("", "end", text=user, values=(f"${-debt:.2f}",))
 
         # Grid the treeview into the window
         tree.grid()
 
         # Set the window title
         sorted_users_window.title("Users Sorted by Debt")
+
+    def individual_debts(self, root_window = None):
+        self.load()
+        user = tk.simpledialog.askstring("Individual Debts", "Who's debt information do you want to view:")
+
+        # Check if the user name doesn't exists
+        if user not in self.users:
+            tk.messagebox.showerror("Error", "User does not exist.")
+            return
+        
+        # Create a new window to show the table
+        table_window = tk.Toplevel(root_window)
+
+        # Load the debts from the debts.csv file into a pandas dataframe
+        debts_df = pd.read_csv("debts.csv")
+
+        # Subsets the debts file to just the specified user
+        debts_df = debts_df.loc[(debts_df['From'] == user) | (debts_df['To'] == user)]
+
+        # Create a treeview widget to display the debts
+        tree = ttk.Treeview(table_window, columns=("Timestamp", "From", "To", "Amount"))
+
+        # Set the headings for the columns
+        tree.heading("Timestamp", text="Timestamp")
+        tree.heading("From", text="From")
+        tree.heading("To", text="To")
+        tree.heading("Amount", text="Amount")
+
+        # Insert the debts into the treeview
+        total_amount = 0
+        for index, row in debts_df.iterrows():
+            if row["From"] == user:
+                amount = -row["Amount"]
+            else:
+                amount = row["Amount"]
+            tree.insert("", "end", text=index+1, values=(row["Timestamp"], row["From"], row["To"], f"${amount:.2f}"))
+            total_amount += amount
+
+        # Add the total amount owed by the individual to the bottom of the treeview
+        tree.insert("", "end", text="Total", values=("", "", "", f"${total_amount:.2f}"))
+
+
+        # grid the treeview into the window
+        tree.grid()
+
+        # Set the window title
+        table_window.title("Individual Data")
+
+        # Update the window to show the treeview
+        table_window.update()
