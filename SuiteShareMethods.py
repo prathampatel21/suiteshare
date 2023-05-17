@@ -317,8 +317,8 @@ class ssmethods:
     
     
     
-    def sort_users_by_debt(self, root_window = None):
-    
+    def sort_users_by_debt(self):
+
         self.load()
         # Create a max heap to store the users based on their total debt
         max_heap = MaxHeap()
@@ -328,24 +328,24 @@ class ssmethods:
             user_debt = (-debt, user)
             # Insert the user_debt tuple into the max heap
             max_heap.insert(user_debt)
-    
+
         # Create a new window to display the sorted users
-        sorted_users_window = tk.Toplevel(root_window)
-    
+        sorted_users_window = tk.Toplevel(self.root_window)
+
         # Create a treeview widget to display the sorted users
         tree = ttk.Treeview(sorted_users_window, columns=("User", "Debt"))
-    
+
         # Set the headings for the columns
         tree.heading("User", text="User")
         tree.heading("Debt", text="Debt")
-    
+
         # Insert the sorted users into the treeview
         while not max_heap.is_empty():
-            debt, user = max_heap.extract_max()
+            debt, user = max_heap.find_max()
             tree.insert("", "end", text=user, values=(user, f"${-debt:.2f}"))
-    
+
         # Grid the treeview into the window
         tree.grid()
-    
+
         # Set the window title
         sorted_users_window.title("Users Sorted by Debt")
