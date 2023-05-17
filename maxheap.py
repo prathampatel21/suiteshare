@@ -16,25 +16,25 @@ class MaxHeap:
 
     def insert(self, item):
         self.heap.append(item)
-        self._sift_up(len(self.heap) - 1)
+        self.heapify_up(len(self.heap) - 1)
 
-    def extract_max(self):
+    def find_max(self):
         if self.is_empty():
             return None
         self.swap(0, len(self.heap) - 1)
         max_item = self.heap.pop()
-        self._sift_down(0)
+        self.heapify_down(0)
         return max_item
 
     def is_empty(self):
         return len(self.heap) == 0
 
-    def _sift_up(self, i):
+    def heapify_up(self, i):
         while i > 0 and self.heap[i] > self.heap[self.parent(i)]:
             self.swap(i, self.parent(i))
             i = self.parent(i)
 
-    def _sift_down(self, i):
+    def heapify_down(self, i):
         n = len(self.heap)
         max_index = i
         left = self.left_child(i)
@@ -47,4 +47,5 @@ class MaxHeap:
 
         if i != max_index:
             self.swap(i, max_index)
-            self._sift_down(max_index)
+            self.heapify_down(max_index)
+
