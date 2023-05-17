@@ -364,7 +364,7 @@ class ssmethods:
     
         # Insert the sorted users into the treeview
         while not max_heap.is_empty():
-            debt, user = max_heap.extract_max()
+            debt, user = max_heap.find_max()
 
             # Check if the user has already been displayed
             if user not in displayed_users:
