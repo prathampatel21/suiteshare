@@ -7,149 +7,411 @@ from tkinter import filedialog
 from tkinter import ttk
 from tkinter import PhotoImage
 from maxheap import MaxHeap
-from SuiteShareMethods import ssmethods
 import datetime
 
+class ssmethods:
 
-class SuiteShareGUI:
-    def __init__(self, root_window):
-        self.methods = ssmethods()
-        self.root_window = root_window
-        root_window.title("SuiteShare")
-        root_window.geometry("545x520")
-        root_window.configure(bg="#4C7330")
-        self.methods.load()
+    def save(self, users_file = "users.csv", debts_file = "debts.csv", graph_file="graph.csv", user_debts_file="user_debts.txt"):
 
-        # Image Label
-        self.image = PhotoImage(file="suiteshare.png")
-        self.image = self.image.subsample(2, 2)
-        self.label_image = tk.Label(root_window, image=self.image, bg="#4C7330")
-        self.label_image.place(x=67)
+        # Save user names to users.csv
+        pd.DataFrame(self.users, columns=["Name"]).to_csv(users_file, index=False)
 
-        # User Entry Box
-        self.user_entry = tk.Entry(root_window, font=("Segoe UI", 16), bg="#D9B777", fg="#4C7330", width = 15)
-        self.user_entry.grid(row=2, column=0, padx=10, pady=(125, 30), sticky="we")
+        # Save debts to debts.csv
+        self.debts.to_csv(debts_file, index=False)
 
-        # Add and Remove User Button
-        self.button_add_user = tk.Button(root_window, text="Add User", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.add_user, pady = 2)
-        self.button_add_user.grid(row=2, column=1, padx=10, pady=(125, 30), sticky="we")
+        # Save graph to graph.csv
+        nodes = sorted(list(self.graph.nodes()))
+        adjacency_matrix = pd.DataFrame(0, index=nodes, columns=nodes)
+        for edge in self.graph.edges():
+            from_user, to_user = edge
+            amount = self.graph.get_edge_data(*edge)["weight"]
+            adjacency_matrix.at[from_user, to_user] = amount
+        adjacency_matrix.to_csv(graph_file)
 
-        self.button_remove_user = tk.Button(root_window, text="Remove User", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.remove_user, pady = 2, width=13)
-        self.button_remove_user.grid(padx=(10,90), pady=(125, 30), sticky="we")
-        self.button_remove_user.place(x=374, y=125, width=160)
+        # Save user debts to a file
+        with open(user_debts_file, "w") as file:
+            for user, debt in self.total_debt.items():
+                file.write(f"{user},{debt}\n")
 
-        # Debtor Entry Widget
-        self.debtor_label = tk.Label(root_window, text="Debtor:", font=("Segoe UI", 16, "bold"), bg="#4C7330", fg="#D9B777")
-        self.debtor_label.grid(row=3, column=0, padx=10, pady=10, sticky="e")
-        self.debtor_entry = tk.Entry(root_window, font=("Segoe UI", 16), bg="#D9B777", fg="#4C7330", width=15)
-        self.debtor_entry.grid(row=3, column=1, padx=10, pady=10, sticky="we")
 
-        # Creditor Entry Widget
-        self.creditor_label = tk.Label(root_window, text="Creditor:", font=("Segoe UI", 16, "bold"), bg="#4C7330", fg="#D9B777")
-        self.creditor_label.grid(row=4, column=0, padx=10, pady=10, sticky="e")
-        self.creditor_entry = tk.Entry(root_window, font=("Segoe UI", 16), bg="#D9B777", fg="#4C7330", width=15)
-        self.creditor_entry.grid(row=4, column=1, padx=10, pady=10, sticky="we")
 
-        # Amount Entry Widget
-        self.amount_label = tk.Label(root_window, text="Amount:", font=("Segoe UI", 16, "bold"), bg="#4C7330", fg="#D9B777")
-        self.amount_label.grid(row=5, column=0, padx=10, pady=10, sticky="e")
-        self.amount_entry = tk.Entry(root_window, font=("Segoe UI", 16), bg="#D9B777", fg="#4C7330", width=15)
-        self.amount_entry.grid(row=5, column=1, padx=10, pady=10, sticky="we")
+    def load(self, users_file = "users.csv", debts_file = "debts.csv", graph_file="graph.csv", user_debts_file="user_debts.txt"):
 
-        # Add Debt and Remove Debt Buttons
-        self.add_debt_button = tk.Button(root_window, text="Add Debt", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.add_debt, pady = 2, width=13)
-        self.add_debt_button.grid(padx=(10,90), pady=(10, 10), sticky="we")
-        self.add_debt_button.place(x=374, y=220, width=160)
-
-        self.remove_debt_button = tk.Button(root_window, text="Remove Debt", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.remove_debt, pady = 2, width=13)
-        self.remove_debt_button.grid(padx=(10,90), pady=(10, 10), sticky="we")
-        self.remove_debt_button.place(x=374, y=272, width=160)
-
-        # Settle Debt and Calculate Split Tax Buttons
-        self.button_clear_debts = tk.Button(root_window, text="Settle Debt", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.methods.clear_debt, pady = 2)
-        self.button_clear_debts.grid(padx=10, pady=(40,10), sticky="we")
-        self.button_clear_debts.place(x=12, y=370, width=160)
-
-        self.button_split_tax = tk.Button(root_window, text="Split Tax", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.methods.split_tax, pady = 2, width=13)
-        self.button_split_tax.grid(padx=10, pady=(40,10), sticky="we",columnspan=1)
-        self.button_split_tax.place(x=193, y=370, width=160)
-
-        # Debt Log and Debt Table Buttons
-        self.button_show_debts = tk.Button(root_window, text="Debt Log", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.show_debts, pady = 2)
-        self.button_show_debts.grid(padx=10, pady=10, sticky="we")
-        self.button_show_debts.place(x=12, y=420, width=160)
-
-        self.button_show_graph = tk.Button(root_window, text="Debt Table", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.show_graph, pady = 2)
-        self.button_show_graph.grid(padx=10, pady=10, sticky="we")
-        self.button_show_graph.place(x=193, y=420, width=160)
-
-        # Clear Data Button
-        self.button_clear_data = tk.Button(root_window, text="Clear Data", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.methods.clear_data, pady = 2)
-        self.button_clear_data.grid(row=10, column=1, padx=10, pady=(135,30), sticky="we")
-
-        # Sort Users Button
-        self.button_sort_users = tk.Button(root_window, text="Sort Users", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.sort_users_by_debt, pady=2, width=13)
-        self.button_sort_users.grid(padx=(10, 90), pady=(10, 10), sticky="we")
-        self.button_sort_users.place(x=374, y=420, width=160)
-
-        # Show Indivisual User Debt Button
-        self.individual_debt_button = tk.Button(root_window, text="Individual Debt", font=("Segoe UI", 16, "bold"), bg="#D9B777", fg="#4C7330", command=self.individual_debts, pady = 2, width=13)
-        self.individual_debt_button.grid(padx=(10, 90), pady=(10, 10), sticky="we")
-        self.individual_debt_button.place(x=374, y=370, width=160)
-
-        # Create data structures
-        self.users = []
-        self.debts = pd.DataFrame(columns=["From", "To", "Amount"])
         self.total_debt = {}
+        # Load users and debts data from CSV files
+        self.users_df = pd.read_csv(users_file)
+        self.users = list(self.users_df["Name"])
 
-        # Create directed graph
-        self.graph = nx.DiGraph()
+        self.debts = pd.read_csv(debts_file)
 
-    def add_user(self):
+        # Load graph data from CSV file
+        graph_df = pd.read_csv(graph_file, index_col=0, header=0)
+        self.graph = nx.DiGraph(graph_df.values)
+        self.graph = nx.relabel_nodes(self.graph, dict(enumerate(graph_df.columns)))
+
+        # Load user debts from a file
+        with open(user_debts_file, "r") as file:
+            for line in file:
+                user, debt = line.strip().split(",")
+                self.total_debt[user] = float(debt)
+
+
+
+    def add_user(self, user_name = None):
+        self.load()
         
-        user_name = self.user_entry.get()
-        self.methods.add_user(user_name) 
-        self.user_entry.delete(0,tk.END)
-
-    def remove_user(self):
+        if user_name == None:
+            return False
+        # Check if the user name already exists
+        if user_name in self.users:
+            tk.messagebox.showerror("Error", "User already exists.")
+            return False
         
-        user_name = self.user_entry.get()
-
-        self.methods.remove_user(user_name)
-        self.user_entry.delete(0,tk.END)
-
-    def add_debt(self):
-        # Get debt details from user input
-        from_user = self.debtor_entry.get()
-        to_user = self.creditor_entry.get()
-        amount = float(self.amount_entry.get())
-
-        self.methods.add_debt(from_user,to_user,amount)
-        self.debtor_entry.delete(0, tk.END)
-        self.creditor_entry.delete(0, tk.END)
-        self.amount_entry.delete(0, tk.END)
+        self.users.append(user_name)
     
-    def remove_debt(self):
-        # Get debt details from user input
-        from_user = self.debtor_entry.get()
-        to_user = self.creditor_entry.get()
-        amount = float(self.amount_entry.get())
-
-        self.methods.remove_debt(from_user,to_user,amount)
-        self.debtor_entry.delete(0, tk.END)
-        self.creditor_entry.delete(0, tk.END)
-        self.amount_entry.delete(0, tk.END)
-
-    def show_debts(self):
-        self.methods.show_debts(self.root_window)
-
-    def show_graph(self):
-        self.methods.show_graph(self.root_window)
+        # Add the user as a node to the graph
+        self.graph.add_node(user_name)
     
-    def sort_users_by_debt(self):
-        self.methods.sort_users_by_debt(self.root_window)
+        # Display a message confirming that the user has been added
+        tk.messagebox.showinfo("Success", f"User {user_name} has been added.")
+        self.save()
+        
 
-    def individual_debts(self):
-        self.methods.individual_debts(self.root_window)
+    
+    def remove_user(self, user_name = None):
+        self.load()
+        
+        if user_name == None:
+            return False
+        # Check if the user name already exists
+        if user_name not in self.users:
+            tk.messagebox.showerror("Error", "User does not exist.")
+            return False
+        
+        self.users.remove(user_name)
+    
+        # Add the user as a node to the graph
+        self.graph.remove_node(user_name)
+    
+        # Display a message confirming that the user has been added
+        tk.messagebox.showinfo("Success", f"User {user_name} has been removed.")
+        self.save()
+    
+    
+    
+    def add_debt(self, from_user = None, to_user = None, amount = None):
+        self.load()
+        
+        # Add debt to dataframe
+        now = datetime.datetime.now()
+        timestamp= now.strftime("%Y-%m-%d %H:%M")
+        self.debts = self.debts.append({
+            "Timestamp": timestamp,
+            "From": from_user,
+            "To": to_user,
+            "Amount": amount
+        }, ignore_index=True)
+
+        # Check if the user name doesn't exists
+        if from_user not in self.users:
+            tk.messagebox.showerror("Error", "One or both users does not not exist.")
+            return
+        elif to_user not in self.users:
+            tk.messagebox.showerror("Error", "One or both users does not not exist.")
+            return
+    
+        # Update graph with new debt
+        if from_user not in self.users:
+            self.users.append(from_user)
+            self.graph.add_node(from_user)
+        if to_user not in self.users:
+            self.users.append(to_user)
+            self.graph.add_node(to_user)
+        if (from_user, to_user) in self.graph.edges():
+            self.graph[from_user][to_user]['weight'] += amount
+        else:
+            self.graph.add_edge(from_user, to_user, weight=amount)
+    
+        # Update total debt
+        if from_user not in self.total_debt:
+            self.total_debt[from_user] = 0
+        if to_user not in self.total_debt:
+            self.total_debt[to_user] = 0
+        self.total_debt[from_user] += amount
+        self.total_debt[to_user] -= amount
+    
+        # Display a message confirming that the debt has been added
+        tk.messagebox.showinfo("Success", f"{from_user} owes {to_user} ${amount:.2f}")
+        self.save()
+        
+        
+    
+    def remove_debt(self, from_user = None, to_user = None, amount = None):
+        self.load()
+    
+        # Add debt to dataframe
+        now = datetime.datetime.now()
+        timestamp= now.strftime("%Y-%m-%d %H:%M")
+        self.debts = self.debts.append({
+            "Timestamp": timestamp,
+            "From": from_user,
+            "To": to_user,
+            "Amount": -amount
+        }, ignore_index=True)
+
+        # Check if the user name doesn't exists
+        if from_user not in self.users:
+            tk.messagebox.showerror("Error", "One or both users does not not exist.")
+            return
+        elif to_user not in self.users:
+            tk.messagebox.showerror("Error", "One or both users does not not exist.")
+            return
+        
+        # Update graph with new debt
+        if from_user not in self.users:
+            self.users.append(from_user)
+            self.graph.add_node(from_user)
+        if to_user not in self.users:
+            self.users.append(to_user)
+            self.graph.add_node(to_user)
+        if (from_user, to_user) in self.graph.edges():
+            self.graph[from_user][to_user]['weight'] -= amount
+        else:
+            self.graph.add_edge(from_user, to_user, weight=amount)
+    
+        # Update total debt
+        if from_user not in self.total_debt:
+            self.total_debt[from_user] = 0
+        if to_user not in self.total_debt:
+            self.total_debt[to_user] = 0
+        self.total_debt[from_user] -= amount
+        self.total_debt[to_user] += amount
+    
+        # Display a message confirming that the debt has been added
+        tk.messagebox.showinfo("Success", f"The amount {amount} has been removed from the debt between {from_user} and {to_user}.")
+        self.save()
+        
+    
+    
+    def clear_debt(self):
+        self.load()
+
+        # Get user name from user input
+        user = tk.simpledialog.askstring("Clear Debt", "Enter the name of the user to clear debts for:")
+    
+        # Remove all debts involving the user
+        self.debts = self.debts.loc[(self.debts["From"] != user) & (self.debts["To"] != user)]
+        self.total_debt = {}
+        for edge in list(self.graph.edges()):  # Make a copy of the edges list
+            if edge[0] == user:
+                self.graph.remove_edge(*edge)
+            elif edge[1] == user:
+                self.graph.remove_edge(*edge)
+    
+        # Display a message confirming that the debts have been cleared
+        tk.messagebox.showinfo("Success", f"All debts involving {user} have been cleared.")
+        self.save()
+    
+    
+
+    def split_tax(self):
+        self.load()
+
+        # Creates lists for users and costs
+        split_users = []
+        split_cost = []
+
+        # Asks user for information
+        num_users = tk.simpledialog.askinteger("Total Users", "Enter the number of users to split amongst (excluding creditor)")
+        creditor = tk.simpledialog.askstring("Creditor", "Enter the name of creditor")
+        total_cost = tk.simpledialog.askfloat("Total Cost", "Enter the total cost of the order after taxes & fees.")
+        total_tax = tk.simpledialog.askfloat("Total Tax", "Enter the total taxes/fees of the order.")
+
+        for i in range(num_users):
+            temp = tk.simpledialog.askstring("User", "Enter the name of the user to split:")
+            # Check if the user name already exists
+            if temp not in self.users:
+                tk.messagebox.showerror("Error", "User does not exist.")
+                temp = tk.simpledialog.askstring("User", "Enter the name of the user to split:")
+            partial_cost = tk.simpledialog.askfloat("Partial Cost", "Enter the partial cost for "  + temp)
+            if partial_cost > total_cost:
+                tk.messagebox.showerror("Error", "Partial cost is greater than the total cost of the order.")
+                return
+            split_users.append(temp)
+            split_cost.append(partial_cost)
+
+        for i in range(num_users):
+            weighted_tax = (split_cost[i]/(total_cost-total_tax))*total_tax
+            weighted_cost = split_cost[i]+weighted_tax
+
+            # Get debt details from user input
+            from_user = split_users[i]
+            to_user = creditor
+            amount = round(weighted_cost,2)
+
+            # Add debt to dataframe
+            self.add_debt(from_user, to_user, amount)
+        self.save()
+    
+    
+    
+    def show_debts(self, root_window = None):
+        self.load()
+
+        table_window = tk.Toplevel(root_window)
+    
+        # Load the debts from the debts.csv file into a pandas dataframe
+        debts_df = pd.read_csv("debts.csv")
+    
+        # Create a treeview widget to display the debts
+        tree = ttk.Treeview(table_window, columns=("Timestamp","From", "To", "Amount"))
+    
+        # Set the headings for the columns
+        tree.heading("Timestamp", text="Timestamp")
+        tree.heading("From", text="From")
+        tree.heading("To", text="To")
+        tree.heading("Amount", text="Amount")
+    
+        # Insert the debts into the treeview
+        for index, row in debts_df.iterrows():
+            tree.insert("", "end", text=index, values=(row["Timestamp"], row["From"], row["To"], f"${row['Amount']:.2f}"))
+    
+        tree.grid()
+        table_window.title("Debt Log")
+    
+    
+    
+    def show_graph(self, root_window = None):
+        self.load()
+        
+        graph_window = tk.Toplevel(root_window)
+    
+        # Load the data from the graph.csv file into a pandas dataframe
+        graph_df = pd.read_csv("graph.csv", index_col=0)
+    
+        # Create a treeview widget to display the data
+        tree = ttk.Treeview(graph_window, columns=graph_df.columns.tolist())
+    
+        # Set the headings for the columns
+        for column in graph_df.columns:
+            tree.heading(column, text=column)
+    
+        # Insert the data into the treeview
+        for index, row in graph_df.iterrows():
+            tree.insert("", "end", text=index, values=row.tolist())
+    
+        tree.grid()
+        graph_window.title("Debt Table")
+    
+    
+    
+    def clear_data(self):
+        self.load()
+
+        # Ask the user to confirm if they want to clear the data
+        confirm = messagebox.askyesno("Clear Data", "Are you sure you want to clear all data?")
+    
+        if confirm:
+            # Clear debts dataframe
+            self.debts = pd.DataFrame(columns=["Timestamp","From", "To", "Amount"])
+    
+            # Clear total debt, graph, and users list
+            self.total_debt = {}
+            self.graph.clear()
+            self.users = []
+    
+            # Write empty dataframe to debts CSV file
+            with open("debts.csv", "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerows([self.debts.columns.values.tolist()])
+    
+            # Display a message confirming that the data has been cleared
+            messagebox.showinfo("Success", "All data has been cleared.")
+            self.save()
+    
+    
+    
+    def sort_users_by_debt(self, root_window = None):
+        self.load()
+
+        # Create a max heap to store the users based on their total debt
+        max_heap = MaxHeap()
+        # Iterate over each user and their total debt
+        for user, debt in self.total_debt.items():
+            # Create a tuple with the negative value of the debt and the user
+            user_debt = (-debt, user)
+            # Insert the user_debt tuple into the max heap
+            max_heap.insert(user_debt)
+    
+        sorted_users_window = tk.Toplevel(root_window)
+    
+        # Create a treeview widget to display the sorted users
+        tree = ttk.Treeview(sorted_users_window, columns=("Debt"))
+    
+        # Set the headings for the columns
+        tree.heading("#0", text="User")
+        tree.heading("Debt", text="Debt")
+
+        # Create a set to keep track of the displayed users
+        displayed_users = set()
+    
+        # Insert the sorted users into the treeview
+        while not max_heap.is_empty():
+            debt, user = max_heap.find_max()
+
+            # Check if the user has already been displayed
+            if user not in displayed_users:
+                displayed_users.add(user)
+                tree.insert("", "end", text=user, values=(f"${-debt:.2f}",))
+
+        tree.grid()
+        sorted_users_window.title("Users Sorted by Debt")
 
 
+
+    def individual_debts(self, root_window = None):
+        self.load()
+
+        user = tk.simpledialog.askstring("Individual Debts", "Who's debt information do you want to view:")
+
+        # Check if the user name doesn't exists
+        if user not in self.users:
+            tk.messagebox.showerror("Error", "User does not exist.")
+            return
+        
+        # Create a new window to show the table
+        table_window = tk.Toplevel(root_window)
+
+        # Load the debts from the debts.csv file into a pandas dataframe
+        debts_df = pd.read_csv("debts.csv")
+
+        # Subsets the debts file to just the specified user
+        debts_df = debts_df.loc[(debts_df['From'] == user) | (debts_df['To'] == user)]
+
+        # Create a treeview widget to display the debts
+        tree = ttk.Treeview(table_window, columns=("Timestamp", "From", "To", "Amount"))
+
+        # Set the headings for the columns
+        tree.heading("Timestamp", text="Timestamp")
+        tree.heading("From", text="From")
+        tree.heading("To", text="To")
+        tree.heading("Amount", text="Amount")
+
+        # Insert the debts into the treeview
+        total_amount = 0
+        for index, row in debts_df.iterrows():
+            if row["From"] == user:
+                amount = -row["Amount"]
+            else:
+                amount = row["Amount"]
+            tree.insert("", "end", text=index+1, values=(row["Timestamp"], row["From"], row["To"], f"${amount:.2f}"))
+            total_amount += amount
+
+        # Add the total amount owed by the individual to the bottom of the treeview
+        tree.insert("", "end", text="Total", values=("", "", "", f"${total_amount:.2f}"))
+
+        tree.grid()
+        table_window.title("Individual Data")
+
+        # Update the window to show the treeview
+        table_window.update()
