@@ -12,6 +12,7 @@ import datetime
 class ssmethods:
 
     def save(self, users_file = "users.csv", debts_file = "debts.csv", graph_file="graph.csv", user_debts_file="user_debts.txt"):
+
         # Save user names to users.csv
         pd.DataFrame(self.users, columns=["Name"]).to_csv(users_file, index=False)
 
@@ -32,7 +33,10 @@ class ssmethods:
             for user, debt in self.total_debt.items():
                 file.write(f"{user},{debt}\n")
 
+
+
     def load(self, users_file = "users.csv", debts_file = "debts.csv", graph_file="graph.csv", user_debts_file="user_debts.txt"):
+
         self.total_debt = {}
         # Load users and debts data from CSV files
         self.users_df = pd.read_csv(users_file)
@@ -51,10 +55,11 @@ class ssmethods:
                 user, debt = line.strip().split(",")
                 self.total_debt[user] = float(debt)
 
+
+
     def add_user(self, user_name = None):
         self.load()
         
-        # Error Checking
         if user_name == None:
             return False
         # Check if the user name already exists
@@ -62,7 +67,6 @@ class ssmethods:
             tk.messagebox.showerror("Error", "User already exists.")
             return False
         
-        # Add the user to the users list
         self.users.append(user_name)
     
         # Add the user as a node to the graph
@@ -72,11 +76,11 @@ class ssmethods:
         tk.messagebox.showinfo("Success", f"User {user_name} has been added.")
         self.save()
         
+
     
     def remove_user(self, user_name = None):
         self.load()
         
-        # Error Checking
         if user_name == None:
             return False
         # Check if the user name already exists
@@ -84,8 +88,6 @@ class ssmethods:
             tk.messagebox.showerror("Error", "User does not exist.")
             return False
         
-    
-        # Add the user to the users list
         self.users.remove(user_name)
     
         # Add the user as a node to the graph
@@ -193,6 +195,7 @@ class ssmethods:
     
     def clear_debt(self):
         self.load()
+
         # Get user name from user input
         user = tk.simpledialog.askstring("Clear Debt", "Enter the name of the user to clear debts for:")
     
@@ -210,22 +213,26 @@ class ssmethods:
         self.save()
     
     
+
     def split_tax(self):
         self.load()
 
+        # Creates lists for users and costs
         split_users = []
         split_cost = []
+
+        # Asks user for information
         num_users = tk.simpledialog.askinteger("Total Users", "Enter the number of users to split amongst (excluding creditor)")
         creditor = tk.simpledialog.askstring("Creditor", "Enter the name of creditor")
         total_cost = tk.simpledialog.askfloat("Total Cost", "Enter the total cost of the order after taxes & fees.")
         total_tax = tk.simpledialog.askfloat("Total Tax", "Enter the total taxes/fees of the order.")
+
         for i in range(num_users):
             temp = tk.simpledialog.askstring("User", "Enter the name of the user to split:")
             # Check if the user name already exists
-            while temp not in self.users:
+            if temp not in self.users:
                 tk.messagebox.showerror("Error", "User does not exist.")
                 temp = tk.simpledialog.askstring("User", "Enter the name of the user to split:")
-
             partial_cost = tk.simpledialog.askfloat("Partial Cost", "Enter the partial cost for "  + temp)
             if partial_cost > total_cost:
                 tk.messagebox.showerror("Error", "Partial cost is greater than the total cost of the order.")
@@ -237,8 +244,6 @@ class ssmethods:
             weighted_tax = (split_cost[i]/(total_cost-total_tax))*total_tax
             weighted_cost = split_cost[i]+weighted_tax
 
-            #add debt to the graph
-
             # Get debt details from user input
             from_user = split_users[i]
             to_user = creditor
@@ -246,15 +251,13 @@ class ssmethods:
 
             # Add debt to dataframe
             self.add_debt(from_user, to_user, amount)
-
         self.save()
-    
     
     
     
     def show_debts(self, root_window = None):
         self.load()
-        # Create a new window to show the table
+
         table_window = tk.Toplevel(root_window)
     
         # Load the debts from the debts.csv file into a pandas dataframe
@@ -273,10 +276,7 @@ class ssmethods:
         for index, row in debts_df.iterrows():
             tree.insert("", "end", text=index, values=(row["Timestamp"], row["From"], row["To"], f"${row['Amount']:.2f}"))
     
-        # grid the treeview into the window
         tree.grid()
-    
-        # Set the window title
         table_window.title("Debt Log")
     
     
@@ -300,16 +300,14 @@ class ssmethods:
         for index, row in graph_df.iterrows():
             tree.insert("", "end", text=index, values=row.tolist())
     
-        # grid the treeview into the window
         tree.grid()
-    
-        # Set the window title
         graph_window.title("Debt Table")
     
     
     
     def clear_data(self):
         self.load()
+
         # Ask the user to confirm if they want to clear the data
         confirm = messagebox.askyesno("Clear Data", "Are you sure you want to clear all data?")
     
@@ -317,13 +315,9 @@ class ssmethods:
             # Clear debts dataframe
             self.debts = pd.DataFrame(columns=["Timestamp","From", "To", "Amount"])
     
-            # Clear total debt
+            # Clear total debt, graph, and users list
             self.total_debt = {}
-    
-            # Clear graph
             self.graph.clear()
-    
-            # Clear users list
             self.users = []
     
             # Write empty dataframe to debts CSV file
@@ -338,18 +332,17 @@ class ssmethods:
     
     
     def sort_users_by_debt(self, root_window = None):
-    
         self.load()
+
         # Create a max heap to store the users based on their total debt
         max_heap = MaxHeap()
         # Iterate over each user and their total debt
         for user, debt in self.total_debt.items():
-            # Create a tuple with the negative value of the debt (to use as a priority) and the user
+            # Create a tuple with the negative value of the debt and the user
             user_debt = (-debt, user)
             # Insert the user_debt tuple into the max heap
             max_heap.insert(user_debt)
     
-        # Create a new window to display the sorted users
         sorted_users_window = tk.Toplevel(root_window)
     
         # Create a treeview widget to display the sorted users
@@ -371,14 +364,14 @@ class ssmethods:
                 displayed_users.add(user)
                 tree.insert("", "end", text=user, values=(f"${-debt:.2f}",))
 
-        # Grid the treeview into the window
         tree.grid()
-
-        # Set the window title
         sorted_users_window.title("Users Sorted by Debt")
+
+
 
     def individual_debts(self, root_window = None):
         self.load()
+
         user = tk.simpledialog.askstring("Individual Debts", "Who's debt information do you want to view:")
 
         # Check if the user name doesn't exists
@@ -417,11 +410,7 @@ class ssmethods:
         # Add the total amount owed by the individual to the bottom of the treeview
         tree.insert("", "end", text="Total", values=("", "", "", f"${total_amount:.2f}"))
 
-
-        # grid the treeview into the window
         tree.grid()
-
-        # Set the window title
         table_window.title("Individual Data")
 
         # Update the window to show the treeview
